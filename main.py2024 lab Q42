@@ -1,0 +1,73 @@
+import sympy as sym
+import numpy as np
+import matplotlib.pyplot as plt
+import control as ctrl
+
+M, m, ell, g, x3, x4, F = sym.symbols('M,m,ell,g,x3,x4,F')
+
+# Φ(F, x3 , x4)
+phi = 4 * m * ell * x4 ** 2 * sym.sin(x3) + 4 * F - 3 * m * g * sym.sin(x3) * sym.cos(x3)
+phi /= 4 * (M + m) - 3 * m * sym.cos(x3) ** 2
+
+# Ψ(F, x3, x4)
+psi = -3 * (m * ell * x4 ** 2 * sym.sin(x3) * sym.cos(x3) + F * sym.cos(x3) - (M + m) * g * sym.sin(x3))
+psi /= ell * (4 * (M + m) - 3 * m * sym.cos(x3) ** 2)
+
+#  Derivative of phi wrt to F , x3 , x4.
+dphi_F = phi.diff(F)
+dphi_x3 = phi.diff(x3)
+dphi_x4 = phi.diff(x4)
+
+#  Derivative of psi wrt to F , x3 , x4.
+dpsi_F = psi.diff(F)
+dpsi_x3 = psi.diff(x3)
+dpsi_x4 = psi.diff(x4)
+
+# Substitute the values at equilibrium.
+dphi_F_eq = dphi_F.subs([(F, 0), (x3, 0), (x4, 0)])
+dphi_x3_eq = dphi_x3.subs([(F, 0), (x3, 0), (x4, 0)])
+dphi_x4_eq = dphi_x4.subs([(F, 0), (x3, 0), (x4, 0)])
+
+# Substitute the values at equilibrium.
+dpsi_F_eq = dpsi_F.subs([(F, 0), (x3, 0), (x4, 0)])
+dpsi_x3_eq = dpsi_x3.subs([(F, 0), (x3, 0), (x4, 0)])
+dpsi_x4_eq = dpsi_x4.subs([(F, 0), (x3, 0), (x4, 0)])
+
+a = dphi_F_eq
+b = -dphi_x3_eq
+c = 3 / ell / (4 * M + m)
+d = 3 * (M + m) * g / ell / (4 * M + m)
+
+M_value = 0.3
+m_value = 0.1
+ell_value = 0.35
+g_value = 9.81
+
+
+def substitute_values(z):
+    return float(z.subs([(M, M_value), (m, m_value), (ell, ell_value), (g, g_value)]))
+
+
+a_value = substitute_values(a)
+b_value = substitute_values(b)
+c_value = substitute_values(c)
+d_value = substitute_values(d)
+
+s = sym.symbols('s')
+t = sym.symbols('t')
+a, b, c, d = sym.symbols('a, b, c, d', real=True, positive=True)
+
+Gtheta_s = -c / (s ** 2 - d)
+Gx_s = (a - (b * c) / (d - s ** 2)) / s ** 2
+
+G_theta_tf = ctrl.TransferFunctionF([-c_value], {1, 0, -d_value})
+Gx_s_tf = ctrl.TransferFunctionF([a_value * d_value + a_value * s - b_value * c_value], [1, 0, d_value, 0, 0])
+# Input F(t)=sin(100 * t ** 2)   t in [0, 0.02]
+t_span = np.linspace(0, 0.02, 500)
+F_t3 = np.sin(100 * t_span ** 2)
+
+t_out, y_out, _ = ctrl.forced_response(G_theta_tf, t_span, F_t3)
+t_out1, y_out2, _ = ctrl.forced_response(Gx_s_tf, t_span, F_t3)
+plt.plot(t_out, y_out)
+plt.plot(t_out1, y_out2)
+plt.show()

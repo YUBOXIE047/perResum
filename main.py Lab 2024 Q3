@@ -1,0 +1,96 @@
+import sympy as sym
+
+M, m, ell, g, x3, x4, F = sym.symbols('M,m,ell,g,x3,x4,F')
+
+# Φ(F, x3 , x4)
+phi = 4 * m * ell * x4 ** 2 * sym.sin(x3) + 4 * F - 3 * m * g * sym.sin(x3) * sym.cos(x3)
+phi /= 4 * (M + m) - 3 * m * sym.cos(x3) ** 2
+
+# Ψ(F, x3, x4)
+psi = -3 * (m * ell * x4 ** 2 * sym.sin(x3) * sym.cos(x3) + F * sym.cos(x3) - (M + m) * g * sym.sin(x3))
+psi /= ell * (4 * (M + m) - 3 * m * sym.cos(x3) ** 2)
+
+#  Derivative of phi wrt to F , x3 , x4.
+dphi_F = phi.diff(F)
+dphi_x3 = phi.diff(x3)
+dphi_x4 = phi.diff(x4)
+
+#  Derivative of psi wrt to F , x3 , x4.
+dpsi_F = psi.diff(F)
+dpsi_x3 = psi.diff(x3)
+dpsi_x4 = psi.diff(x4)
+
+# Substitute the values at equilibrium.
+dphi_F_eq = dphi_F.subs([(F, 0), (x3, 0), (x4, 0)])
+dphi_x3_eq = dphi_x3.subs([(F, 0), (x3, 0), (x4, 0)])
+dphi_x4_eq = dphi_x4.subs([(F, 0), (x3, 0), (x4, 0)])
+
+# Substitute the values at equilibrium.
+dpsi_F_eq = dpsi_F.subs([(F, 0), (x3, 0), (x4, 0)])
+dpsi_x3_eq = dpsi_x3.subs([(F, 0), (x3, 0), (x4, 0)])
+dpsi_x4_eq = dpsi_x4.subs([(F, 0), (x3, 0), (x4, 0)])
+
+a = dphi_F_eq
+b = -dphi_x3_eq
+c = 3 / ell / (4 * M + m)
+d = 3 * (M + m) * g / ell / (4 * M + m)
+
+M_value = 0.3
+m_value = 0.1
+ell_value = 0.35
+g_value = 9.81
+
+
+def substitute_values(z):
+    return float(z.subs([(M, M_value), (m, m_value), (ell, ell_value), (g, g_value)]))
+
+
+a_value = substitute_values(a)
+b_value = substitute_values(b)
+c_value = substitute_values(c)
+d_value = substitute_values(d)
+
+s = sym.symbols('s')
+t = sym.symbols('t')
+a, b, c, d = sym.symbols('a, b, c, d', real=True, positive=True)
+
+Gtheta_s = -c / (s ** 2 - d)
+Gx_s = (a - (b * c) / (d - s ** 2)) / s ** 2
+
+# Impulse response of G(theta)
+F_s = 1
+F_s = Gtheta_s * F_s
+F_t1 = sym.inverse_laplace_transform(F_s, s, t)
+
+# Step response of G(theta)
+X3s_step = Gtheta_s / s
+X3t_step = sym.inverse_laplace_transform(X3s_step, s, t)
+
+# frequency response of G(theta) F(t) = sin(omega * t)
+omega = sym.symbols('omega', real=True)
+F_s = omega / (s ** 2 + omega ** 2)
+Theta_s1 = Gtheta_s * F_s
+theta_t1 = sym.inverse_laplace_transform(Theta_s1, s, t)
+
+# Impulse response of G(X)
+F_s = 1
+F_s = Gx_s * F_s
+F_t2 = sym.inverse_laplace_transform(F_s, s, t)
+
+# Step response of G(X)
+X1s_step = Gx_s * F_s
+X1t_step = sym.inverse_laplace_transform(X1s_step, s, t)
+
+# Frequency response of G(X) F(t) = sin(omega * t)
+omega = sym.symbols('omega', reai=True)
+F_s = omega / (s ** 2 + omega ** 2)
+Theta_s2 = Gx_s * F_s
+theta_t2 = sym.inverse_laplace_transform(Theta_s2, s, t)
+
+
+sym.pprint(F_t1)
+sym.pprint(F_t2)
+sym.pprint(X3t_step)
+sym.pprint(X1t_step)
+sym.pprint(theta_t1.simplify())
+sym.pprint(theta_t2.simplify())
